@@ -33,12 +33,24 @@ class Dataset:
     @property
     # sampling rate/the number of samples in the signal 
     def _frequency_resolution(self):
-        
         return self.frequency_resolution
-
-    def SWH(std = True):
-        pass
-
+    
+    def Nyqyist_frequency(self):
+        return 0.5 * self.frequency_resolution
+    
+    def SWH(self, std = True):
+        if std:
+            signal = self.get_signal_data()
+            if signal.dtype == np.int16:
+                # in case of wave data I tranform it to int64 since there is overflow error when squaring 
+                signal = (signal).astype(np.int64)
+            N = len(signal)
+            std = np.sqrt(sum(np.square(signal))/N)
+            return 4*std
+        
+    def mean(self):
+        return self.signal.mean()
+    
     def get_time_data(self):
         return self.timedata
         
@@ -74,7 +86,12 @@ class ExperimentDataset(Dataset):
    #to do add npoints
     def plot_data(self, npoints=0):
         fig, ax = plt.subplots(figsize=(20, 5))
-        _ = ax.plot(self.dataset.elapsed_secs.values,self.dataset.probe_4)
+        _ = ax.plot(self.dataset.elapsed_secs.values,self.dataset.probe_4, linewidth=1, label ='water surface level')
+        ax.axhline(y=self.SWH(), color='navy', linewidth=1, linestyle='-', label=f'swh')
+        ax.grid()
+        ax.legend()
+        plt.title('Oslo wave lab experiment data')
+
 
 # dataset II
 class HDF5_Dataset(Dataset):
@@ -87,10 +104,16 @@ class HDF5_Dataset(Dataset):
 
     def number_of_samples(self):
         return len(self.signal)
+
         
     def plot_data(self, n_points = 200):
         fig, ax = plt.subplots(figsize=(25, 5))
-        _ = ax.plot(self.timedata[:n_points], self.signal[:n_points])
+        _ = ax.plot(self.timedata[:n_points], self.signal[:n_points],linewidth=1, label ='sea level')
+        ax.axhline(y=self.SWH(), color='navy', linewidth=1, linestyle='-', label=f'swh')
+        ax.grid()
+        ax.legend()
+        plt.title('Bay of Biscat data')
+
 
 # dataset III
 class DaupnerDataset(Dataset):
@@ -123,18 +146,21 @@ class DaupnerDataset(Dataset):
     def get_signal_data(self):
         return self.dataset['corrected_height']
     
+    def get_data(self):
+        return self.dataset
+    
     #to do add npoints
     def plot_data(self, npoints=0):
         fig, ax = plt.subplots(figsize=(14, 10))
         date_format = mdates.DateFormatter('%H:%M:%s')
         id_max = self.dataset['corrected_height'].idxmax()
         id_min = self.dataset['corrected_height'].idxmin()
-        max_sl = self.dataset.iloc[id_max].corrected_height
-        min_sl = self.dataset.iloc[id_min].corrected_height
-        timestamp_max = self.dataset.iloc[id_max].timestamp
-        timestamp_min = self.dataset.iloc[id_min].timestamp
+        max_sl = round(self.dataset.iloc[id_max].corrected_height,1)
+        min_sl = round(self.dataset.iloc[id_min].corrected_height,1)
+        #timestamp_max = self.dataset.iloc[id_max].timestamp
+        #timestamp_min = self.dataset.iloc[id_min].timestamp
         plt.xticks(rotation=45)
-        first = self.dataset['timestamp'].iloc[0]
+        #first = self.dataset['timestamp'].iloc[0]
 
         ax.xaxis.set_major_locator(mdates.SecondLocator(interval=120))
         ax.xaxis.set_major_formatter(date_format)
@@ -144,14 +170,14 @@ class DaupnerDataset(Dataset):
         plt.ylabel('surface level [m]')
         plt.yticks([min_sl, -5, 0, 5, 10, 15, max_sl], [f'min: {min_sl}',  '-5','0','5','10','15', f'max: {max_sl}'])
 
-        ax.plot(self.dataset.timestamp, self.dataset.corrected_height, linewidth=1, label ='surface level')
+        ax.plot(self.dataset.timestamp, self.dataset.corrected_height, linewidth=1, label ='sea level')
         ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'sea level')
+        ax.axhline(y=self.SWH(), color='navy', linewidth=1, linestyle='-', label=f'swh')
 
         ax.grid()
         ax.legend()
-
         plt.title('Daupner E data')
-        plt.show()
+        
  
 # dataset IV
 class WaveDataset(Dataset):
@@ -169,4 +195,8 @@ class WaveDataset(Dataset):
         #n_secs = 0.01 # [s]
         n_secs_points = int(n_secs * self.sample_rate)
         fig, ax = plt.subplots(figsize=(25, 5))
-        _ = ax.plot(self.timedata[:n_secs_points], self.signal[:n_secs_points])
+        _ = ax.plot(self.timedata[:n_secs_points], self.signal[:n_secs_points],  label ='sound level')
+        ax.axhline(y=self.SWH(), color='navy', linewidth=1, linestyle='-', label=f'swh')
+        ax.grid()
+        ax.legend()
+        plt.title('Sound file')
