@@ -29,6 +29,10 @@ class Dataset:
     
     def number_of_samples(self):
         pass
+    
+    @property
+    def dataset_name(self):
+        return self._dataset_name
 
     @property
     # sampling rate/the number of samples in the signal 
@@ -55,11 +59,34 @@ class Dataset:
         return self.timedata
         
     def get_signal_data(self):
-        return self.signal
-      
+        return self.signal 
         
     def plot_data(npoints):
         pass
+    def get_power_law_params(self):
+        pass
+
+    def plot_one_sided_spectrum(self):
+        signal = self.get_signal_data()
+        signal_hat = np.fft.fft(signal)
+        spectrum_array = np.square(np.abs(signal_hat))
+        sample_rate = self.sample_rate
+        if sample_rate == 0:
+            return
+        frequencies = np.fft.fftfreq(len(signal), 1 / sample_rate)
+        Nyqyist_frequency = self.Nyqyist_frequency()
+        non_negative_indices_nyquist = np.where((frequencies >= 0) & (frequencies > Nyqyist_frequency))
+        power_law = lambda x,exponent: x**exponent
+        power_law_alpha, power_law_exponent = self.get_power_law_params()
+        fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+        ax.loglog(frequencies[non_negative_indices_nyquist],spectrum_array[non_negative_indices_nyquist], linewidth = 1)
+        ax.loglog(frequencies[non_negative_indices_nyquist], power_law_alpha *power_law(frequencies[non_negative_indices_nyquist], power_law_exponent), color = 'red', linewidth = 1, label = f"power law {power_law_alpha}*x^{power_law_exponent}")
+
+        ax.set_title(f'{self.dataset_name} - one sided spectrum  for frequencies up to the Nyquist frequency')
+        ax.set_xlabel('frequency [Hz]')
+        ax.set_ylabel('spectral density S(f)')
+        ax.legend()
+        ax.grid(True)
     
 # dataset I
 class ExperimentDataset(Dataset):
@@ -73,6 +100,10 @@ class ExperimentDataset(Dataset):
         #tutaj read description from Karsten oblig
         self.dataset['probe_4'] = self.dataset['probe_4_raw'].mean() - self.dataset['probe_4_raw']
         self.sample_rate = 125
+        self._dataset_name = 'Oslo wave lab experiment data'
+    
+    def get_power_law_params(self):
+        return(0.025, -1)
 
     def get_time_data(self):
         return self.dataset['elapsed_secs']
@@ -94,7 +125,7 @@ class ExperimentDataset(Dataset):
         plt.ylabel('surface level [m]')
         ax.grid()
         ax.legend()
-        plt.title('Oslo wave lab experiment data')
+        plt.title(self.dataset_name)
 
 
 # dataset II
@@ -104,10 +135,14 @@ class HDF5_Dataset(Dataset):
         self.timedata = (dataset['t'])[0,:]
         self.signal = (dataset['eta'])[0,:]
         #tutaj I dont know sample_rate
-        self.sample_rate = 0 
+        self.sample_rate = 0
+        self._dataset_name  = 'Bay of Biscay data'
 
     def number_of_samples(self):
         return len(self.signal)
+    
+    def get_power_law_params(self):
+        return(0.02, -1)
 
         
     def plot_data(self, n_points = 200):
@@ -120,8 +155,7 @@ class HDF5_Dataset(Dataset):
         plt.ylabel('surface level [m]')
         ax.grid()
         ax.legend()
-        plt.title('Bay of Biscay data')
-
+        plt.title(self.dataset_name)
 
 # dataset III
 class DaupnerDataset(Dataset):
@@ -133,6 +167,8 @@ class DaupnerDataset(Dataset):
         self._add_time_information()
         # number of samples / number of seconds (20 min * 60 seconds)
         self.sample_rate = self.dataset.shape[0]/(20*60)
+        self._dataset_name  = 'Daupner E data'
+
 
     def number_of_samples(self):
         return self.dataset.shape[0]
@@ -156,6 +192,9 @@ class DaupnerDataset(Dataset):
     
     def get_data(self):
         return self.dataset
+    
+    def get_power_law_params(self):
+        return(10, -4)
     
     #to do add npoints
     def plot_data(self, npoints=0):
@@ -181,12 +220,11 @@ class DaupnerDataset(Dataset):
         plt.yticks([min_sl, -5, 0, 5, half_swh, 10,  15, max_sl], [f'min: {min_sl}',  '-5','0','5',f'Hs: {half_swh}', '10','15', f'max: {max_sl}'])
 
         ax.plot(self.dataset.timestamp, self.dataset.corrected_height, linewidth=1, label ='sea level')
-        ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'Hs')
-        
+        ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'Hs')     
        
         ax.grid()
         ax.legend()
-        plt.title('Daupner E data')
+        plt.title(self.dataset_name)
         
  
 # dataset IV
@@ -197,9 +235,13 @@ class WaveDataset(Dataset):
             self.signal = np.frombuffer(frames, dtype=np.int16)
             self.sample_rate = wf.getframerate()
             self.timedata = np.linspace(0, len(self.signal) / self.sample_rate, num=len(self.signal))
+        self._dataset_name = 'Sound file'
     
     def number_of_samples(self):
         return len(self.signal)
+    
+    def get_power_law_params(self):
+        return(1e15, -1)
 
     def plot_data(self, n_secs = 0.01):
         #n_secs = 0.01 # [s]
@@ -214,4 +256,4 @@ class WaveDataset(Dataset):
         plt.ylabel('raw amplitude')
         ax.grid()
         ax.legend()
-        plt.title('Sound file')
+        plt.title(self.dataset_name)
