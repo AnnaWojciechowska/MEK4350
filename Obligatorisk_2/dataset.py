@@ -49,7 +49,7 @@ class Dataset:
             return 4*std
         
     def mean(self):
-        return self.signal.mean()
+        return (self.get_signal_data()).mean()
     
     def get_time_data(self):
         return self.timedata
@@ -86,8 +86,12 @@ class ExperimentDataset(Dataset):
    #to do add npoints
     def plot_data(self, npoints=0):
         fig, ax = plt.subplots(figsize=(20, 5))
-        _ = ax.plot(self.dataset.elapsed_secs.values,self.dataset.probe_4, linewidth=1, label ='water surface level')
-        ax.axhline(y=self.SWH(), color='navy', linewidth=1, linestyle='-', label=f'swh')
+        _ = ax.plot(self.dataset.elapsed_secs.values,self.dataset.probe_4, linewidth=1, label ='eta/free surface level')
+        ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'water level')
+        half_swh  =round(self.SWH()/2,2)
+        ax.axhline(y=half_swh, color='navy', linewidth=1, linestyle='-', label=f'Hs')
+        plt.yticks([-0.02, -0.01, 0, 0.01, half_swh, 0.02], ['-0.02', '-0.01','0', '0.01', f'Hs: {half_swh}',  '0.02',])
+        plt.ylabel('surface level [m]')
         ax.grid()
         ax.legend()
         plt.title('Oslo wave lab experiment data')
@@ -108,11 +112,15 @@ class HDF5_Dataset(Dataset):
         
     def plot_data(self, n_points = 200):
         fig, ax = plt.subplots(figsize=(25, 5))
-        _ = ax.plot(self.timedata[:n_points], self.signal[:n_points],linewidth=1, label ='sea level')
-        ax.axhline(y=self.SWH(), color='navy', linewidth=1, linestyle='-', label=f'swh')
+        _ = ax.plot(self.timedata[:n_points], self.signal[:n_points],linewidth=1, label ='eta/free surface level')
+        ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'sea level')
+        half_swh  =round(self.SWH()/2,1)
+        ax.axhline(y=half_swh, color='navy', linewidth=1, linestyle='-', label=f'Hs')
+        plt.yticks([-1.5, -1, -0.5, 0, 0.5, 1, half_swh, 1.5 ], ['-1.5', '-1','0.5', '0', '0.5', '1', f'Hs: {half_swh}', '1.5'])
+        plt.ylabel('surface level [m]')
         ax.grid()
         ax.legend()
-        plt.title('Bay of Biscat data')
+        plt.title('Bay of Biscay data')
 
 
 # dataset III
@@ -165,15 +173,17 @@ class DaupnerDataset(Dataset):
         ax.xaxis.set_major_locator(mdates.SecondLocator(interval=120))
         ax.xaxis.set_major_formatter(date_format)
         #plt.xticks([first, timestamp_min, timestamp_max], [f' {first}', f'min: {timestamp_min}', f'max: {timestamp_max}'])
+        half_swh = round(self.SWH()/2,1)
+        ax.axhline(y=half_swh, color='navy', linewidth=1, linestyle='-', label=f'Hs')
 
         plt.ylim(min_sl - 1,max_sl + 1)
         plt.ylabel('surface level [m]')
-        plt.yticks([min_sl, -5, 0, 5, 10, 15, max_sl], [f'min: {min_sl}',  '-5','0','5','10','15', f'max: {max_sl}'])
+        plt.yticks([min_sl, -5, 0, 5, half_swh, 10,  15, max_sl], [f'min: {min_sl}',  '-5','0','5',f'Hs: {half_swh}', '10','15', f'max: {max_sl}'])
 
         ax.plot(self.dataset.timestamp, self.dataset.corrected_height, linewidth=1, label ='sea level')
-        ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'sea level')
-        ax.axhline(y=self.SWH(), color='navy', linewidth=1, linestyle='-', label=f'swh')
-
+        ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'Hs')
+        
+       
         ax.grid()
         ax.legend()
         plt.title('Daupner E data')
@@ -196,7 +206,12 @@ class WaveDataset(Dataset):
         n_secs_points = int(n_secs * self.sample_rate)
         fig, ax = plt.subplots(figsize=(25, 5))
         _ = ax.plot(self.timedata[:n_secs_points], self.signal[:n_secs_points],  label ='sound level')
-        ax.axhline(y=self.SWH(), color='navy', linewidth=1, linestyle='-', label=f'swh')
+        ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'0 level')
+        half_swh = round(self.SWH()/2,1)
+        ax.axhline(y=half_swh, color='navy', linewidth=1, linestyle='-', label=f'swh')
+        #plt.yticks( [-30000, -20000, -10000, 0, 10000, 20000, 30000], ['-30K','-20K','-10K', '0','10K','20K',,'30K', f'SWH: {half_swh}'])
+        plt.yticks( [-30000, -20000, -10000, 0, 10000, 20000, 30000, half_swh], ['-30K','-20K','-10K', '0','10K','20K','30K', f'Hs: {half_swh}'])
+        plt.ylabel('raw amplitude')
         ax.grid()
         ax.legend()
         plt.title('Sound file')
