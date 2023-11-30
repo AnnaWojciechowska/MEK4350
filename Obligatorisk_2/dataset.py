@@ -40,7 +40,7 @@ class Dataset:
         return self.frequency_resolution
     
     def Nyqyist_frequency(self):
-        return 0.5 * self.frequency_resolution
+        return 0.5 * self._sample_rate
     
     def SWH(self, std = True):
         if std:
@@ -96,8 +96,6 @@ class ExperimentDataset(Dataset):
         date_format = '%m/%d/%Y %H:%M:%S.%f'
         self.dataset['date_time'] = pd.to_datetime(self.dataset['date_string'], format=date_format)
         self.dataset['elapsed_secs'] =  (self.dataset['date_time'] - self.dataset.at[0, 'date_time']).dt.total_seconds()
-        #double check if the data should be flipped
-        #tutaj read description from Karsten oblig
         self.dataset['probe_4'] = self.dataset['probe_4_raw'].mean() - self.dataset['probe_4_raw']
         self.sample_rate = 125
         self._dataset_name = 'Oslo wave lab experiment data'
@@ -251,7 +249,6 @@ class WaveDataset(Dataset):
         ax.axhline(y=0, color='red', linewidth=1, linestyle='-', label=f'0 level')
         half_swh = round(self.SWH()/2,1)
         ax.axhline(y=half_swh, color='navy', linewidth=1, linestyle='-', label=f'swh')
-        #plt.yticks( [-30000, -20000, -10000, 0, 10000, 20000, 30000], ['-30K','-20K','-10K', '0','10K','20K',,'30K', f'SWH: {half_swh}'])
         plt.yticks( [-30000, -20000, -10000, 0, 10000, 20000, 30000, half_swh], ['-30K','-20K','-10K', '0','10K','20K','30K', f'Hs: {half_swh}'])
         plt.ylabel('raw amplitude')
         ax.grid()
