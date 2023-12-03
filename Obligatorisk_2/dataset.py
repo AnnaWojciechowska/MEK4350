@@ -75,7 +75,7 @@ class Dataset:
             return
         frequencies = np.fft.fftfreq(len(signal), 1 / sample_rate)
         Nyqyist_frequency = self.Nyqyist_frequency()
-        non_negative_indices_nyquist = np.where((frequencies >= 0) & (frequencies > Nyqyist_frequency))
+        non_negative_indices_nyquist = np.where((frequencies > 0) & (frequencies < Nyqyist_frequency))
         power_law = lambda x,exponent: x**exponent
         power_law_alpha, power_law_exponent = self.get_power_law_params()
         fig, ax = plt.subplots(1, 1, figsize=(10, 5))
